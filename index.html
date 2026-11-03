@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>LIGHT — A quiet candle timer</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#050505;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}body{overflow:hidden}.app{height:100dvh;min-height:420px;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 26px) 25px calc(env(safe-area-inset-bottom) + 26px)}header{display:flex;justify-content:space-between;align-items:center;letter-spacing:.3em;font-size:11px;color:#aaa}header span:last-child{letter-spacing:.22em;color:#777}main{position:relative;flex:1;min-height:0}canvas{display:block;width:100%;height:100%}.bottom{display:flex;flex-direction:column;align-items:center;gap:20px}.clock{font-size:13px;letter-spacing:.15em;color:#777;font-variant-numeric:tabular-nums}.controls{display:flex;justify-content:center;align-items:center;gap:clamp(14px,7vw,32px)}button,select{width:clamp(65px,20vw,78px);height:clamp(65px,20vw,78px);border-radius:50%;font-size:10px;letter-spacing:.09em;font-family:inherit;cursor:pointer}button.secondary,select{background:transparent;color:#eee;border:1px solid #777}button.primary{background:#e9e9e9;color:#080808;border:1px solid #e9e9e9}select{appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;padding:0 3px}button:focus-visible,select:focus-visible{outline:2px solid white;outline-offset:4px}.verse{height:18px;font-size:10px;letter-spacing:.08em;color:#666;text-align:center;margin-top:5px}@media(max-height:650px){.app{padding-top:18px;padding-bottom:15px}.bottom{gap:10px}.verse{display:none}}
-</style></head><body><div class="app"><header><span>LIGHT</span><span>PASSAGE / 02</span></header><main><canvas id="scene" aria-label="A candle burns down as the timer progresses"></canvas></main><div class="bottom"><div class="clock" id="clock">30:00</div><div class="controls"><button class="secondary" id="reset">RESET</button><button class="primary" id="toggle">START</button><select id="duration" aria-label="Timer duration"><option value="1">1 MIN</option><option value="5">5 MIN</option><option value="10">10 MIN</option><option value="15">15 MIN</option><option value="30" selected>30 MIN</option><option value="45">45 MIN</option><option value="60">60 MIN</option></select></div><div class="verse">PSALM 119:105</div></div></div>
+</style></head><body><div class="app"><header><span>LIGHT</span><span>STUDY / V5</span></header><main><canvas id="scene" aria-label="A candle burns down as the timer progresses"></canvas></main><div class="bottom"><div class="clock" id="clock">30:00</div><div class="controls"><button class="secondary" id="reset">RESET</button><button class="primary" id="toggle">START</button><select id="duration" aria-label="Timer duration"><option value="1">1 MIN</option><option value="5">5 MIN</option><option value="10">10 MIN</option><option value="15">15 MIN</option><option value="30" selected>30 MIN</option><option value="45">45 MIN</option><option value="60">60 MIN</option></select></div><div class="verse">PSALM 119:105</div></div></div>
 <script>
 (()=>{
 const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d'),clock=document.getElementById('clock'),toggle=document.getElementById('toggle'),reset=document.getElementById('reset'),select=document.getElementById('duration');
@@ -19,13 +19,13 @@ select.onchange=()=>{duration=Number(select.value)*60000;elapsed=0;running=false
 function draw(now){
  if(running&&elapsed+now-started>=duration){elapsed=duration;running=false;finishedAt=now}
  update(now);ctx.clearRect(0,0,w,h);
- const p=progress(now),t=now*.001,cx=w/2,base=h*.88,full=Math.min(h*.64,370),top=base-full*(1-p),height=base-top,cw=Math.min(74,w*.23);
+ const p=progress(now),t=now*.001,cx=w/2,base=h*.88,full=Math.min(h*.64,370),top=base-full*(1-p),height=base-top,cw=Math.min(100,w*.29);
  const flick=Math.sin(t*2.7)*3+Math.sin(t*6.2)*1.4;
  function dot(x,y,r,a){ctx.globalAlpha=a;ctx.fillRect(x,y,r,r)}
  if(p<1){
   // An opaque, luminous wax silhouette ensures details survive mobile displays.
   const wax=ctx.createLinearGradient(cx-cw/2,0,cx+cw/2,0);
-  wax.addColorStop(0,'#676767');wax.addColorStop(.13,'#c5c5c5');wax.addColorStop(.32,'#eeeeee');wax.addColorStop(.55,'#bdbdbd');wax.addColorStop(.8,'#929292');wax.addColorStop(1,'#414141');
+  wax.addColorStop(0,'#929292');wax.addColorStop(.13,'#e6e6e6');wax.addColorStop(.32,'#ffffff');wax.addColorStop(.55,'#e0e0e0');wax.addColorStop(.8,'#c8c8c8');wax.addColorStop(1,'#777777');
   ctx.globalAlpha=1;ctx.fillStyle=wax;ctx.beginPath();
   ctx.moveTo(cx-cw/2,top+3);ctx.bezierCurveTo(cx-cw*.23,top-1,cx+cw*.22,top+8,cx+cw/2,top+2);
   ctx.lineTo(cx+cw/2,base);ctx.lineTo(cx-cw/2,base);ctx.closePath();ctx.fill();
@@ -47,14 +47,14 @@ function draw(now){
    ctx.fillStyle='#dddddd';ctx.beginPath();ctx.ellipse(x,top+len,1.3,2.2,0,0,Math.PI*2);ctx.fill();
   }
   ctx.globalAlpha=1;ctx.strokeStyle='#bcbcbc';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(cx,top+2);ctx.quadraticCurveTo(cx-2,top-7,cx+1,top-15);ctx.stroke();
-  const fy=top-20,flameH=39+Math.sin(t*4.1)*4;
+  const fy=top-20,flameH=56+Math.sin(t*4.1)*6;
   // Distinct luminous halo, with a visibly bright core.
   const halo=ctx.createRadialGradient(cx,fy-10,1,cx,fy-10,83);
   halo.addColorStop(0,'rgba(255,255,255,.36)');halo.addColorStop(.19,'rgba(255,255,255,.14)');halo.addColorStop(.5,'rgba(255,255,255,.035)');halo.addColorStop(1,'rgba(255,255,255,0)');
   ctx.globalAlpha=1;ctx.fillStyle=halo;ctx.beginPath();ctx.arc(cx,fy-10,83,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#fafafa';ctx.beginPath();ctx.moveTo(cx,fy+10);
-  ctx.bezierCurveTo(cx-14,fy+1,cx-9+flick,fy-flameH*.6,cx+flick,fy-flameH);
-  ctx.bezierCurveTo(cx+8+flick,fy-flameH*.48,cx+13,fy+2,cx,fy+10);ctx.fill();
+  ctx.bezierCurveTo(cx-20,fy+1,cx-15+flick,fy-flameH*.6,cx+flick,fy-flameH);
+  ctx.bezierCurveTo(cx+14+flick,fy-flameH*.48,cx+19,fy+2,cx,fy+10);ctx.fill();
   // Dark inner wick core gives flame shape and depth.
   ctx.fillStyle='rgba(30,30,30,.8)';ctx.beginPath();ctx.ellipse(cx,fy+7,2.7,5,0,0,Math.PI*2);ctx.fill();
   // Bright and dark micro-particles animate over the flame.
