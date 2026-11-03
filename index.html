@@ -19,26 +19,65 @@ select.onchange=()=>{duration=Number(select.value)*60000;elapsed=0;running=false
 function draw(now){
  if(running&&elapsed+now-started>=duration){elapsed=duration;running=false;finishedAt=now}
  update(now);ctx.clearRect(0,0,w,h);
- const p=progress(now/1),cx=w/2,baseY=h*.89,fullHeight=Math.min(h*.67,390),topY=baseY-fullHeight*(1-p),cw=Math.min(46,w*.16),t=now*.001;
- // The wax body shortens from the top; its foot stays fixed.
+ const p=progress(now),t=now*.001,cx=w/2,base=h*.89,full=Math.min(h*.69,420),top=base-full*(1-p),height=base-top,cw=Math.min(68,w*.19);
+ const flick=Math.sin(t*2.7)*2.8+Math.sin(t*5.9)*1.7+Math.sin(t*11.1)*.7;
+ // All imagery is made from subpixel stipple marks rather than solid vector fills.
+ function dot(x,y,r,a){ctx.globalAlpha=a;ctx.fillRect(x,y,r,r)}
  if(p<1){
-  const bodyH=baseY-topY;
-  const shade=ctx.createLinearGradient(cx-cw/2,0,cx+cw/2,0);shade.addColorStop(0,'#777');shade.addColorStop(.22,'#dedede');shade.addColorStop(.53,'#b7b7b7');shade.addColorStop(1,'#4c4c4c');
-  ctx.fillStyle=shade;ctx.beginPath();ctx.moveTo(cx-cw/2,topY+3);ctx.quadraticCurveTo(cx,topY+10,cx+cw/2,topY+2);ctx.lineTo(cx+cw/2,baseY);ctx.lineTo(cx-cw/2,baseY);ctx.closePath();ctx.fill();
-  ctx.strokeStyle='#f2f2f2';ctx.lineWidth=1;ctx.globalAlpha=.48;ctx.beginPath();ctx.ellipse(cx,topY+3,cw/2,4,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
-  // Grain, subtle wax drips and irregular texture.
-  for(let i=0;i<850;i++){const x=cx+(rand(i+8)-.5)*cw,y=topY+rand(i+1000)*bodyH;if(y>baseY)continue;ctx.fillStyle=rand(i+500)<.54?'rgba(255,255,255,.15)':'rgba(0,0,0,.18)';ctx.fillRect(x,y,.45+rand(i+60)*.75,.6+rand(i+200)*1.5)}
-  for(let i=0;i<4;i++){const x=cx-cw/2+5+i*(cw-10)/3,len=(8+rand(i+65)*25)*Math.min(1,bodyH/70);ctx.strokeStyle='rgba(240,240,240,.35)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,topY+3);ctx.quadraticCurveTo(x+3,topY+len*.5,x,topY+len);ctx.stroke()}
-  const wickY=topY-3;ctx.strokeStyle='#cfcfcf';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(cx,topY+2);ctx.lineTo(cx,wickY-11);ctx.stroke();
-  // Gentle white flame and restrained halo.
-  const flick=Math.sin(t*3.1)*1.8+Math.sin(t*6.7)*.8,fy=wickY-12,flameH=29+Math.sin(t*4.3)*2.5;
-  const glow=ctx.createRadialGradient(cx+flick*.4,fy-8,1,cx,fy-8,Math.min(w*.24,90));glow.addColorStop(0,'rgba(255,255,255,.16)');glow.addColorStop(.4,'rgba(255,255,255,.055)');glow.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,fy-8,Math.min(w*.24,90),0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#f5f5f5';ctx.beginPath();ctx.moveTo(cx,fy+9);ctx.bezierCurveTo(cx-12,fy+1,cx-8+flick,fy-flameH*.5,cx+flick,fy-flameH);ctx.bezierCurveTo(cx+9+flick,fy-flameH*.45,cx+12,fy+2,cx,fy+9);ctx.fill();
-  ctx.fillStyle='rgba(40,40,40,.65)';ctx.beginPath();ctx.ellipse(cx,fy+6,2.4,5,0,0,Math.PI*2);ctx.fill();
+  // Dense, stable wax stippling, with directional lighting and natural surface variation.
+  const count=Math.min(22000,Math.round(17000*height/full));
+  for(let i=0;i<count;i++){
+   const u=rand(i*2+21),v=rand(i*2+22),x=cx+(u-.5)*cw,y=top+v*height;
+   const edge=Math.sqrt(Math.max(0,1-Math.pow((u-.5)*2,2)));
+   const lum=.12+.75*Math.pow(edge,1.25)*(.65+.35*Math.cos((u-.31)*3.1));
+   const grain=.55+.45*rand(i+50003);
+   const drip=Math.sin(u*24+v*3)*.045;
+   dot(x,y,.32+rand(i+12000)*.8,Math.min(.95,lum*grain+drip));
+  }
+  // Delicate wax edges and a subtly uneven top surface.
+  ctx.globalAlpha=.64;ctx.strokeStyle='#d9d9d9';ctx.lineWidth=.65;
+  ctx.beginPath();ctx.moveTo(cx-cw/2,base);ctx.lineTo(cx-cw/2,top+3);ctx.bezierCurveTo(cx-cw*.2,top-1,cx+cw*.12,top+7,cx+cw/2,top+2);ctx.lineTo(cx+cw/2,base);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(cx,top+3,cw/2,5,0,0,Math.PI*2);ctx.stroke();
+  for(let j=0;j<7;j++){
+   const u=.07+j*.135,x=cx+(u-.5)*cw,len=(8+rand(j+102)*44)*Math.min(1,height/75);
+   ctx.globalAlpha=.16+rand(j+700)*.38;ctx.lineWidth=.7+rand(j+90)*1.2;ctx.beginPath();ctx.moveTo(x,top+3);ctx.bezierCurveTo(x+2,top+len*.25,x-2,top+len*.8,x,top+len);ctx.stroke();
+  }
+  // Wick.
+  ctx.globalAlpha=.9;ctx.strokeStyle='#e6e6e6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,top+3);ctx.quadraticCurveTo(cx-2,top-6,cx+1,top-14);ctx.stroke();
+  const fy=top-20,flameH=36+Math.sin(t*4.1)*4,tipX=cx+flick;
+  // Fine, animated aura: soft cloud of individually moving light pixels.
+  for(let i=0;i<2100;i++){
+   const a=rand(i+4000)*Math.PI*2,r=Math.sqrt(rand(i+7000)),rx=43,ry=65;
+   const x=cx+Math.cos(a)*r*rx+flick*(1-r)*.4;
+   const y=fy-12+Math.sin(a)*r*ry;
+   const pulse=.75+.25*Math.sin(t*(1+rand(i+8200)*2)+i);
+   dot(x,y,.35+rand(i+9900)*.8,.018*(1-r)*pulse);
+  }
+  // Luminous flame is a living particle silhouette with a narrow bright core.
+  for(let i=0;i<4300;i++){
+   const v=rand(i*2+100000),u=rand(i*2+100001),yy=fy+10-v*(flameH+12);
+   const width=11*Math.pow(1-v,.8)*Math.pow(Math.sin(Math.PI*(v*.94+.03)),.35)+.5;
+   const x=cx+(u-.5)*2*width+flick*v*v;
+   const core=1-Math.abs(u-.5)*2;
+   const wav=.78+.22*Math.sin(t*5+i*.13);
+   dot(x,yy,.35+rand(i+110000)*.7,(.13+.75*Math.pow(core,1.3))*wav);
+  }
+  // Tiny thermal motes rising from the flame, with distinct independent trajectories.
+  for(let i=0;i<145;i++){
+   const speed=.11+rand(i+2100)*.24,phase=(t*speed+rand(i+3500))%1;
+   const x=cx+(rand(i+6200)-.5)*20+Math.sin(phase*8+t*.45+i)*8+flick*.4;
+   const y=fy-30-phase*Math.min(150,h*.25);
+   dot(x,y,.4+rand(i+1300)*.9,.2*(1-phase)*(.5+.5*Math.sin(t*2+i)));
+  }
+  ctx.globalAlpha=1;
  }else{
-  // A brief dissipating smoke trail at completion.
   const age=finishedAt===null?100:(now-finishedAt)/1000;
-  if(age<7){for(let i=0;i<65;i++){const a=i/65,drift=Math.sin(a*7+t*.8)*7,opacity=(1-a)*Math.max(0,1-age/7)*.34;ctx.fillStyle='rgba(230,230,230,'+opacity+')';ctx.beginPath();ctx.arc(cx+drift+(rand(i+40)-.5)*8,baseY-18-a*105-age*7,rand(i+90)*1.5+.4,0,Math.PI*2);ctx.fill()}}
+  if(age<9){for(let i=0;i<800;i++){
+   const v=rand(i+100),u=rand(i+900),y=base-v*(85+age*10)-age*6;
+   const x=cx+Math.sin(v*8+t*.8)*11+(u-.5)*(5+v*24);
+   dot(x,y,.35+rand(i+600)*1.2,(1-v)*Math.max(0,1-age/9)*.23);
+  }}
+  ctx.globalAlpha=1;
  }
  requestAnimationFrame(draw)
 }
