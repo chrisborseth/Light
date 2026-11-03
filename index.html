@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>LIGHT — A quiet candle timer</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#050505;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}body{overflow:hidden}.app{height:100dvh;min-height:420px;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 26px) 25px calc(env(safe-area-inset-bottom) + 26px)}header{display:flex;justify-content:space-between;align-items:center;letter-spacing:.3em;font-size:11px;color:#aaa}header span:last-child{letter-spacing:.22em;color:#777}main{position:relative;flex:1;min-height:0}canvas{display:block;width:100%;height:100%}.bottom{display:flex;flex-direction:column;align-items:center;gap:20px}.clock{font-size:13px;letter-spacing:.15em;color:#777;font-variant-numeric:tabular-nums}.controls{display:flex;justify-content:center;align-items:center;gap:clamp(14px,7vw,32px)}button,select{width:clamp(65px,20vw,78px);height:clamp(65px,20vw,78px);border-radius:50%;font-size:10px;letter-spacing:.09em;font-family:inherit;cursor:pointer}button.secondary,select{background:transparent;color:#eee;border:1px solid #777}button.primary{background:#e9e9e9;color:#080808;border:1px solid #e9e9e9}select{appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;padding:0 3px}button:focus-visible,select:focus-visible{outline:2px solid white;outline-offset:4px}.verse{height:18px;font-size:10px;letter-spacing:.08em;color:#666;text-align:center;margin-top:5px}@media(max-height:650px){.app{padding-top:18px;padding-bottom:15px}.bottom{gap:10px}.verse{display:none}}
+</style></head><body><div class="app"><header><span>LIGHT</span><span>PASSAGE / 02</span></header><main><canvas id="scene" aria-label="A candle burns down as the timer progresses"></canvas></main><div class="bottom"><div class="clock" id="clock">30:00</div><div class="controls"><button class="secondary" id="reset">RESET</button><button class="primary" id="toggle">START</button><select id="duration" aria-label="Timer duration"><option value="1">1 MIN</option><option value="5">5 MIN</option><option value="10">10 MIN</option><option value="15">15 MIN</option><option value="30" selected>30 MIN</option><option value="45">45 MIN</option><option value="60">60 MIN</option></select></div><div class="verse">PSALM 119:105</div></div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d'),clock=document.getElementById('clock'),toggle=document.getElementById('toggle'),reset=document.getElementById('reset'),select=document.getElementById('duration');
+let duration=30*60000,elapsed=0,running=false,started=0,finishedAt=null,w=0,h=0,dpr=1;
+function rand(n){let x=Math.sin(n*127.1+78.233)*43758.5453;return x-Math.floor(x)}
+function resize(){const r=canvas.getBoundingClientRect();w=r.width;h=r.height;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+new ResizeObserver(resize).observe(canvas);
+function progress(now){const ms=running?Math.min(duration,elapsed+now-started):elapsed;return Math.min(1,ms/duration)}
+function remaining(now){return Math.max(0,duration-(running?elapsed+now-started:elapsed))}
+function update(now){const s=Math.ceil(remaining(now)/1000);clock.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');toggle.textContent=running?'PAUSE':elapsed>=duration?'RESTART':elapsed>0?'RESUME':'START'}
+toggle.onclick=()=>{const now=performance.now();if(running){elapsed=Math.min(duration,elapsed+now-started);running=false}else{if(elapsed>=duration){elapsed=0;finishedAt=null}started=now;running=true}update(now)};
+reset.onclick=()=>{elapsed=0;running=false;finishedAt=null;update(performance.now())};
+select.onchange=()=>{duration=Number(select.value)*60000;elapsed=0;running=false;finishedAt=null;update(performance.now())};
+function draw(now){
+ if(running&&elapsed+now-started>=duration){elapsed=duration;running=false;finishedAt=now}
+ update(now);ctx.clearRect(0,0,w,h);
+ const p=progress(now/1),cx=w/2,baseY=h*.89,fullHeight=Math.min(h*.67,390),topY=baseY-fullHeight*(1-p),cw=Math.min(46,w*.16),t=now*.001;
+ // The wax body shortens from the top; its foot stays fixed.
+ if(p<1){
+  const bodyH=baseY-topY;
+  const shade=ctx.createLinearGradient(cx-cw/2,0,cx+cw/2,0);shade.addColorStop(0,'#777');shade.addColorStop(.22,'#dedede');shade.addColorStop(.53,'#b7b7b7');shade.addColorStop(1,'#4c4c4c');
+  ctx.fillStyle=shade;ctx.beginPath();ctx.moveTo(cx-cw/2,topY+3);ctx.quadraticCurveTo(cx,topY+10,cx+cw/2,topY+2);ctx.lineTo(cx+cw/2,baseY);ctx.lineTo(cx-cw/2,baseY);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#f2f2f2';ctx.lineWidth=1;ctx.globalAlpha=.48;ctx.beginPath();ctx.ellipse(cx,topY+3,cw/2,4,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+  // Grain, subtle wax drips and irregular texture.
+  for(let i=0;i<850;i++){const x=cx+(rand(i+8)-.5)*cw,y=topY+rand(i+1000)*bodyH;if(y>baseY)continue;ctx.fillStyle=rand(i+500)<.54?'rgba(255,255,255,.15)':'rgba(0,0,0,.18)';ctx.fillRect(x,y,.45+rand(i+60)*.75,.6+rand(i+200)*1.5)}
+  for(let i=0;i<4;i++){const x=cx-cw/2+5+i*(cw-10)/3,len=(8+rand(i+65)*25)*Math.min(1,bodyH/70);ctx.strokeStyle='rgba(240,240,240,.35)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,topY+3);ctx.quadraticCurveTo(x+3,topY+len*.5,x,topY+len);ctx.stroke()}
+  const wickY=topY-3;ctx.strokeStyle='#cfcfcf';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(cx,topY+2);ctx.lineTo(cx,wickY-11);ctx.stroke();
+  // Gentle white flame and restrained halo.
+  const flick=Math.sin(t*3.1)*1.8+Math.sin(t*6.7)*.8,fy=wickY-12,flameH=29+Math.sin(t*4.3)*2.5;
+  const glow=ctx.createRadialGradient(cx+flick*.4,fy-8,1,cx,fy-8,Math.min(w*.24,90));glow.addColorStop(0,'rgba(255,255,255,.16)');glow.addColorStop(.4,'rgba(255,255,255,.055)');glow.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,fy-8,Math.min(w*.24,90),0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#f5f5f5';ctx.beginPath();ctx.moveTo(cx,fy+9);ctx.bezierCurveTo(cx-12,fy+1,cx-8+flick,fy-flameH*.5,cx+flick,fy-flameH);ctx.bezierCurveTo(cx+9+flick,fy-flameH*.45,cx+12,fy+2,cx,fy+9);ctx.fill();
+  ctx.fillStyle='rgba(40,40,40,.65)';ctx.beginPath();ctx.ellipse(cx,fy+6,2.4,5,0,0,Math.PI*2);ctx.fill();
+ }else{
+  // A brief dissipating smoke trail at completion.
+  const age=finishedAt===null?100:(now-finishedAt)/1000;
+  if(age<7){for(let i=0;i<65;i++){const a=i/65,drift=Math.sin(a*7+t*.8)*7,opacity=(1-a)*Math.max(0,1-age/7)*.34;ctx.fillStyle='rgba(230,230,230,'+opacity+')';ctx.beginPath();ctx.arc(cx+drift+(rand(i+40)-.5)*8,baseY-18-a*105-age*7,rand(i+90)*1.5+.4,0,Math.PI*2);ctx.fill()}}
+ }
+ requestAnimationFrame(draw)
+}
+update(performance.now());requestAnimationFrame(draw);
+})();
+</script></body></html>
